@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CTASection } from "@/components/home/CTASection";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { ChevronRight } from "lucide-react";
 type Params = Promise<{ slug: string }>;
 
@@ -57,14 +57,18 @@ export default async function BlogPostPage(props: { params: Params }) {
     ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : 'Recent';
 
-  // Sanitize the HTML content from Tiptap
-  const cleanHtml = DOMPurify.sanitize(post.content || '', {
-    ALLOWED_TAGS: [
+  // Sanitize the HTML content using server-compatible sanitize-html
+  const cleanHtml = sanitizeHtml(post.content || '', {
+    allowedTags: [
       'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
       'strong', 'em', 'u', 'ul', 'ol', 'li', 'a', 
       'blockquote', 'br', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img'
     ],
-    ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title', 'width', 'height', 'rel']
+    allowedAttributes: {
+      '*': ['class'],
+      'a': ['href', 'target', 'rel', 'title'],
+      'img': ['src', 'alt', 'title', 'width', 'height']
+    }
   });
 
   return (
